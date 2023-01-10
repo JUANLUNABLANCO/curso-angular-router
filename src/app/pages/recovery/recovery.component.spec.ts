@@ -11,9 +11,7 @@ describe('RecoveryComponent', () => {
       declarations: [ RecoveryComponent ]
     })
     .compileComponents();
-  });
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(RecoveryComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

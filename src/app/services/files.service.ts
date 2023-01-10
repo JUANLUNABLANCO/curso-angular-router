@@ -1,18 +1,18 @@
 import { Injectable } from '@angular/core';
+
 import { HttpClient } from '@angular/common/http';
 import { saveAs } from 'file-saver';
 import { tap, map } from 'rxjs/operators';
 
-import { environment } from './../../environments/environment';
-import { FileRta } from './../models/files.model';
+import { File } from '../models/file.model';
+import { checkTime } from '../interceptors/time-http.interceptor';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FilesService {
 
-  private apiUrl = `${environment.API_URL}/api/files`;
-
+  private apiUrl = 'https://young-sands-07814.herokuapp.com/api';
   constructor(
     private http: HttpClient
   ) { }
@@ -20,7 +20,7 @@ export class FilesService {
   getFile(name: string, url: string, type: string) {
     return this.http.get(url, {responseType: 'blob'})
     .pipe(
-      tap(content => {
+      tap( content => {
         const blob = new Blob([content], {type});
         saveAs(blob, name);
       }),
@@ -28,9 +28,9 @@ export class FilesService {
     );
   }
 
-  uploadFile(file: Blob) {
+  uploadFile(file: Blob){
     const dto = new FormData();
-    dto.append('file', file);
-    return this.http.post<FileRta>(`${this.apiUrl}/upload`, dto)
+    dto.append('file', file)
+    return this.http.post<File>(`${this.apiUrl}/files/upload`, dto, {context: checkTime()});
   }
 }

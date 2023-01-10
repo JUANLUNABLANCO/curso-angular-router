@@ -1,16 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 
-import { TimeInterceptor } from './time.interceptor';
+import { TimeHttpInterceptor } from './time-http.interceptor';
 
-describe('TimeInterceptor', () => {
+describe('TimeHttpInterceptor', () => {
   beforeEach(() => TestBed.configureTestingModule({
     providers: [
-      TimeInterceptor
+      TimeHttpInterceptor
       ]
   }));
 
   it('should be created', () => {
-    const interceptor: TimeInterceptor = TestBed.inject(TimeInterceptor);
+    const interceptor: TimeHttpInterceptor = TestBed.inject(TimeHttpInterceptor);
     expect(interceptor).toBeTruthy();
   });
 });
