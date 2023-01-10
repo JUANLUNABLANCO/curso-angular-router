@@ -86,7 +86,7 @@ Angular: 15.0.4
 ... platform-browser, platform-browser-dynamic, router
 
 Package                         Version
----------------------------------------------------------       
+---------------------------------------------------------
 @angular-devkit/architect       0.1500.4
 @angular-devkit/build-angular   15.0.4
 @angular-devkit/core            15.0.4
@@ -235,7 +235,23 @@ git branch -M  main
 	> git add .
 	> git commit -m "scaffolding project with webpack"
 	> git push -u origin main
-	
+
+## PROBLEMAS CON EL EOL EN W10
+
+> git config --global core.autocrlf true
+
+pondrá todos los ficheros que tengan un salto de línea en \r\n, que es lo que necesita windows, en vez de 
+\n que es lo que necesita los sistemas unix
+
+con eso, en el README.md podrás leerlo como se espera
+
+tras esa configuración y para que surta efecto debes de hacer lo sigueinte
+
+> git add --renormalize .
+
+> git commit -m "Renormalizing eofile eolines"
+
+> git push origin main	
 ## Extensiones del navegador
 
 	JSON Formatter
@@ -806,12 +822,7 @@ Esto es una comunicación hacia adentro del padre al hijo
 
 
 
-ngOnInit(): void {
-    this.productsService.getProductsByPage(this.limit, this.offset)
-    .subscribe(data => {
-      this.products = data;
-    });
-  }
+
 
 es decir
 
