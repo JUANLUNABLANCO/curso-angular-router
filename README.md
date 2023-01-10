@@ -177,7 +177,8 @@ That is because, the linter cannot find this tsconfig.json
 
 Do that:
 
---- .eslintrc.json ---
+ .eslintrc.json 
+```
         "project": [
           "tsconfig.json"
         ],
@@ -187,7 +188,7 @@ Do that:
         "project": [
           "**/tsconfig.json"
         ],
---- ---
+``` 
 
 ## SOME PROBLEMS WITH .eslintrc.json
 
@@ -197,17 +198,19 @@ if you recibe this problem in the .eslintrc.json:
 
 You can change that in this file:
 
---- .eslintrc.json ---
+ .eslintrc.json 
+```
 {
   "compilerOptions": {
     "moduleResolution": "node"
   }
 }
---- ---
+``` 
 
  to
 
---- .eslintrc.json ---
+ .eslintrc.json
+```
 {
   "compilerOptions": {
     "moduleResolution": "node"
@@ -216,7 +219,7 @@ You can change that in this file:
     "./src/**/*.ts"
   ]
 }
---- ---
+```
 
 
 ## GIT CONFIGURATIONS
@@ -287,15 +290,17 @@ ng g c pages/profile
 
 Ahora con router-oulet manejaremos rutas y no renderizaremos nuestro app-products directamente el router-outlet se encargará.
 
---- app.component.html ---
+ app.component.html
+```
 <app-nav></app-nav>
 <router-outlet></router-outlet>
 <!-- <app-products></app-products> -->
---- ---
+```
 
 Automáticamente el cli de angular añade por cada componente lo siguiente en el app.module.ts
 
---- app.module.ts ---
+ app.module.ts
+```
   ...
   import { NotFoundComponent } from './pages/not-found/not-found.component';
   import { CategoryComponent } from './pages/category/category.component';
@@ -317,11 +322,12 @@ Automáticamente el cli de angular añade por cada componente lo siguiente en el
       RecoveryComponent,
       ProfileComponent
       ],
---- ---
+```
 
 Para crear el routing con esas páginas tenemos que importarlas en app.routing.ts
 
---- app.routing.ts ---
+ app.routing.ts
+```
 import { HomeComponent } from './pages/home/home.component';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { CategoryComponent } from './pages/category/category.component';
@@ -363,7 +369,7 @@ const route: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
---- ---
+```
 
 Ahora el router outlet no muestra nada, porque no tenemos una ruta por defecto que nos lleve al home por ejemplo, pero si pones: localhost://home podrás ver el home y así con cada ruta definida.
 
@@ -372,9 +378,10 @@ Ahora el router outlet no muestra nada, porque no tenemos una ruta por defecto q
 
 ahora en el componente home
 
---- home.component.html ---
+ home.component.html
+```
 <app-products></app-products>
---- ---
+```
 
 y si vamos a http://localhost:4200/home
 
@@ -382,7 +389,8 @@ veremos los productos renderizados, como los teníamos antes.
 
 Para que renderice el home por defecto podemos hacer lo siguiente
 
---- app-routing.module.ts ---
+ app-routing.module.ts
+```
   ...
   {
     path: '',
@@ -394,11 +402,12 @@ Para que renderice el home por defecto podemos hacer lo siguiente
     component: HomeComponent
   },
   ...
---- ---
+```
 
 Vamos a hacer unos cambios en el products.component.ts para que nos sirva para las categorías, para ello icluiremos un Input y algunas cosas
 
---- Estado actual del products.component.ts ---
+ Estado actual del products.component.ts
+```
 import { Component, OnInit } from '@angular/core';
 
 import { Product, CreateProductDTO, UpdateProductDTO } from '../../models/product.model';
@@ -538,11 +547,12 @@ export class ProductsComponent implements OnInit {
     });
   }
 }
---- ---
+```
 
 Cambios a realizar
 
---- products.component.ts ---
+ products.component.ts 
+```
 import { Component, Input } from '@angular/core';
 
 import { Product, CreateProductDTO, UpdateProductDTO } from '../../models/product.model';
@@ -638,8 +648,9 @@ export class ProductsComponent {
     }
   }
 }
---- ---
---- products.component.html ---
+```
+ products.component.html 
+```
 import { Component, Input } from '@angular/core';
 
 import { Product, CreateProductDTO, UpdateProductDTO } from '../../models/product.model';
@@ -735,8 +746,10 @@ export class ProductsComponent {
     }
   }
 }
---- ---
---- home.component.ts ---
+```
+
+home.component.ts
+```
 import { Component, OnInit } from '@angular/core';
 
 import { ProductsService } from '../../services/products.service';
@@ -800,10 +813,12 @@ export class HomeComponent implements OnInit {
   }
 
 }
---- ---
---- home.component.html ---
+```
+
+home.component.html
+```
 <app-products [products]="products"></app-products>
---- ---
+```
 
 
 // LOGICA @Input
@@ -827,7 +842,6 @@ Esto es una comunicación hacia adentro del padre al hijo
 
 
 
-es decir
 
 
 ## NETLIFY
