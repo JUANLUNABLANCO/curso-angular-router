@@ -802,7 +802,7 @@ Esto es una comunicación hacia adentro del padre al hijo
 
 // REVISA angulardevtools en el navegador verás la estructura de la página
 
-![snappshoot angular dev tools]('snapshoots/Screenshot_1.png')
+![snappshoot angular dev tools](/snapshoots/Screenshot_1.png)
 
 
 
