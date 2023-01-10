@@ -68,12 +68,15 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 > ng serve -o                 // servir el proyecto
 > ng serve -o --port=3500     //  en el puerto especificado
 > ng version
+
+```
      _                      _                 ____ _     ___
     / \   _ __   __ _ _   _| | __ _ _ __     / ___| |   |_ _|
    / △ \ | '_ \ / _` | | | | |/ _` | '__|   | |   | |    | |
   / ___ \| | | | (_| | |_| | | (_| | |      | |___| |___ | |
  /_/   \_\_| |_|\__, |\__,_|_|\__,_|_|       \____|_____|___|
                 |___/
+```
 
 Angular CLI: 15.0.4
 Node: 16.17.0
