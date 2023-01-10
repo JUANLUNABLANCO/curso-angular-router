@@ -75,13 +75,12 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
  /_/   \_\_| |_|\__, |\__,_|_|\__,_|_|       \____|_____|___|
                 |___/
 
-
 Angular CLI: 15.0.4
 Node: 16.17.0
 Package Manager: npm 8.15.0
 OS: win32 x64
-
 Angular: 15.0.4
+
 ... animations, cli, common, compiler, compiler-cli, core, forms
 ... platform-browser, platform-browser-dynamic, router
 
@@ -317,7 +316,7 @@ Automáticamente el cli de angular añade por cada componente lo siguiente en el
       RegisterComponent,
       RecoveryComponent,
       ProfileComponent
-    ],
+      ],
 --- ---
 
 Para crear el routing con esas páginas tenemos que importarlas en app.routing.ts
