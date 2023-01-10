@@ -256,7 +256,13 @@ tras esa configuración y para que surta efecto debes de hacer lo sigueinte
 
 > git commit -m "Renormalizing eofile eolines"
 
-> git push origin main	
+> git push origin main
+
+// IMPORTANTE el codigo de los ficheros debe ser copiado directamente en el README.md entre 
+``` comillas ``` para que se vea bien, porque por defecto un fichero de código borra los eol.
+
+
+
 ## Extensiones del navegador
 
 	JSON Formatter
@@ -269,13 +275,13 @@ tras esa configuración y para que surta efecto debes de hacer lo sigueinte
 		Postman
 
 	### extension de VSC
-	
+
 		Thunder client << DEPENDIENDO DEL TIPO DE TECNOLOGÍA HABRÁ UNA U OTRA >>
 
 ## npm aditional installations
 
 	> npm install date-fns --save << DEPENDIENDO DEL TIPO DE TECNOLOGÍA HABRÁ UNA U OTRA >>
-	
+
 
 ## CREANDO RUTAS [vídeo-2]
 
@@ -377,7 +383,7 @@ export class AppRoutingModule { }
 Ahora el router outlet no muestra nada, porque no tenemos una ruta por defecto que nos lleve al home por ejemplo, pero si pones: localhost://home podrás ver el home y así con cada ruta definida.
 
 
-## Lazy loading y Programación modular [vídeo-3]
+## Creando el Home (comunicación padre hijo | @Input) [vídeo-3]
 
 ahora en el componente home
 
@@ -840,6 +846,17 @@ Esto es una comunicación hacia adentro del padre al hijo
 // REVISA angulardevtools en el navegador verás la estructura de la página
 
 ![snappshoot angular dev tools](/snapshoots/Screenshot_1.png)
+
+
+## Página de categorías (comunicación hijo-padre | @Output) [vídeo-4]
+
+reto comunicación desde el hijo al padre para la paginación
+
+
+
+
+
+
 
 
 
