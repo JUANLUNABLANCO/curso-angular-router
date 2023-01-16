@@ -1014,6 +1014,63 @@ dentro de category.component
 solo tenemos que crear una paginación similar o comunicar mediante input y output
 
 
+## Evitar doble subscribe (callback hell) switchMap()
+
+![callbackHell](snapshoots/screenshot_2-callbackhell.png)
+
+category.components.ts
+```
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      this.categoryId = params.get('id') || null;
+      if(this.categoryId)
+        this.productsService.getByCategory(this.categoryId, this.limit, this.offset)
+        .subscribe(data => {
+          this.products = data;
+        });
+    });
+  }
+```
+
+category.component.ts --> mejorado sin callbach hell
+```
+  import { switchMap } from 'rxjs/operators';
+
+  ngOnInit(): void {
+    this.route.paramMap.
+      .pipe(
+        switchMap(params => {
+          this.categoryId = params.get('id') || null;)
+          if(this.categoryId) {
+            return this.productsService.getByCategory(this.categoryId, this.limit, this.offset)
+          }
+          // id vacío
+          return [];
+      )
+      .subscribe((data) => {
+        this.products = data;
+      });
+  }
+```
+Ahora se puede prescindir del template.html, es decir para una sola línea de código, esta:
+
+<app-products [products]="products" [page]="page" (pageUp)="onPageUp()" (pageDown)="onPageDown()"></app-products>
+
+no es necesario cargar un fichero, lo puedes indicar en el decorador del componente de esta manera:
+
+products.component.html
+```
+@Component({
+  selector: 'app-products',
+  templateUrl: './products.component.html', // cambiando esta línea por esto otro
+
+  template:
+  `<app-products [products]="products" [page]="page" (pageUp)="onPageUp()" (pageDown)="onPageDown()"></app-products>`
+
+  styleUrls: ['./products.component.scss']
+})
+```
+
 
 
 
