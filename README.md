@@ -850,7 +850,169 @@ Esto es una comunicación hacia adentro del padre al hijo
 
 ## Página de categorías (comunicación hijo-padre | @Output) [vídeo-4]
 
-reto comunicación desde el hijo al padre para la paginación
+products.component.html
+```
+<div class="pagination">
+    <button (click)="onPageDown()">Bajar página</button>
+    <span> {{ page + 1 }}</span>
+    <button (click)="onPageUp()">Subir Página</button>
+</div>
+```
+products.component.ts
+```
+  @Input() page=0;  // este viene del padre home
+
+  @Output() pageUp = new EventEmitter(); // estos van hacia el padre home
+  @Output() pageDown = new EventEmitter();
+
+  onPageUp(){ // el boton del html lanza este evento, lo emite
+    this.pageUp.emit();
+  }
+  onPageDown(){
+    this.pageDown.emit();
+  }
+```
+
+home.component.html
+```
+<app-products [products]="products" [page]="page" (pageUp)="onPageUp()" (pageDown)="onPageDown()"></app-products>
+```
+Estos dos son inputs en el hijo products, se enviará la info al hijo para renderizarlo
+[products]="products"
+[page]="page"
+
+En cambio estos son eventos lanzados desde el hijo pageUp y pageDown que lanzan el método onPageDown() y onPageUp()
+(pageUp)="onPageUp()"
+(pageDown)="onPageDown()
+
+```
+  // products
+  products: Product[] = [];
+  // pagination
+  limit=10;
+  offset=0;
+  page=0;
+  MAX_PRODUCTS_IN_BD = 50;  // esto debería consultarse a productService
+
+
+  constructor(
+    private productsService: ProductsService
+  ) {}
+  ngOnInit(): void {
+    this.productsService.getProductsByPage(this.limit, this.offset)
+    .subscribe(data => {
+      this.products = data;
+    });
+  }
+  onPageUp(){
+    if (this.limit * (this.page + 1) < this.MAX_PRODUCTS_IN_BD ) {
+      this.page += 1;
+      this.offset = this.limit * this.page;
+      this.productsService.getProductsByPage(this.limit, this.offset)
+        .subscribe(data => {
+          this.products = data;
+      });
+    }
+  }
+  onPageDown(){
+    if ((this.page - 1) >= 0 ) {
+      this.page -= 1;
+      this.offset = this.limit * this.page;
+      this.productsService.getProductsByPage(this.limit, this.offset)
+        .subscribe(data => {
+          this.products = data;
+      });
+    }
+  }
+```
+Ahora toda la logica del componente porducts está en su padre home, la paginación y la recuperación de productos
+desde el inicio, cuando se actualiza porducts, o page la información viaja del padre 'Home' al hijo 'Products'
+
+vamos ahora con las categorías, para ello en el
+
+app-routing.module.ts
+```
+  {
+    path: 'category/:id',
+    component: CategoryComponent
+  },
+```
+hemos añadido un parámetro /:id que recibiremos en la petición de la url
+
+category.component.ts
+```
+import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
+ ...
+export class CategoryComponent {
+
+  categoryId: string | null = null;
+  constructor(
+    private route: ActivatedRoute
+  ) {}
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      this.categoryId = params.get('id');
+    });
+  }
+}
+```
+en la API externa tienes documentacion acerca del endpoint nuevo de categorias: 
+https://damp-spire-59848.herokuapp.com/docs/
+
+{GET}: /api/categories/{id}/products
+
+también trae un limit y un offset
+
+products.service.ts
+```
+  getByCategory(categoryId: string, limit: number, offset: number) {
+    let params = new HttpParams();
+    if(limit && offset != null) {
+      params = params.set('limit', limit);
+      params = params.set('offset', offset);
+    }
+    return this.http.get<Product[]>(`${this.apiUrl}/categories/${categoryId}/products`, {
+      params,
+      context: checkTime()
+    });
+  }
+```
+
+category.component.ts
+```
+  categoryId: string | null = null;
+  limit=10;
+  offset=0;
+  products: Product[] = [];
+
+  constructor(
+    private route: ActivatedRoute,
+    private productsService: ProductsService
+  ) {}
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      this.categoryId = params.get('id') || null;
+      if(this.categoryId)
+        this.productsService.getByCategory(this.categoryId, this.limit, this.offset)
+        .subscribe(data => {
+          this.products = data;
+        });
+    });
+  }
+```
+
+category.component.html
+```
+<app-products [products]="products" [page]="page" (pageUp)="onPageUp()" (pageDown)="onPageDown()"></app-products>
+```
+
+ahora la refactorización que hicimos con products y home nos sirve para poder reutilezar <app-products></app-products>
+dentro de category.component
+
+solo tenemos que crear una paginación similar o comunicar mediante input y output
+
 
 
 

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 import { Product, CreateProductDTO, UpdateProductDTO } from '../../models/product.model';
 
@@ -13,11 +13,19 @@ import { ProductsService } from '../../services/products.service';
 export class ProductsComponent {
 
   @Input() products: Product[] = [];
+  @Input() page=0;
+
+  @Output() pageUp = new EventEmitter();
+  @Output() pageDown = new EventEmitter();
 
   myShoppingCart: Product[] = [];
   total = 0;
   showProductDetail = false;
   productChosen: Product | null = null;
+  // pagination
+  // limit=10;
+  // offset=0;
+  // MAX_PRODUCTS_IN_BD = 50;  // esto debería consultarse a productService
 
   // statusDetail
   statusDetail: 'loading' | 'success' | 'error' | 'init' = 'init';
@@ -28,6 +36,12 @@ export class ProductsComponent {
   ) {
 
     this.myShoppingCart = this.storeService.getShoppingCart();
+  }
+  onPageUp(){
+    this.pageUp.emit();
+  }
+  onPageDown(){
+    this.pageDown.emit();
   }
 
   onAddToShoppingCart(product: Product) {
