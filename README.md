@@ -1710,11 +1710,172 @@ para poder insertar productos, editarlos, etc, este módulo no necesita al <app-
 
 Ahora nuestro módulo cms es independiente del modulo app
 
-![estructura de carpetas](screenshots/Screenshot_11-older-structure.png)
+![estructura de carpetas](screenshots/Screenshot_11-folder-structure.png)
+
+Otra cosa que vemos en el cms-routing.module.ts es el [RouterModule.forChild(routes)], mientras en el app-module es [RouetrModule.forRoot(routes)]
+
+maquetemeos el alyout
+
+layout.component.html
+```
+<div>
+    <header>
+        <h3>Title</h3>
+    </header>
+    <nav>
+        <ul>
+            <li><a routerLink="grid">Grid Page</a></li>
+            <li><a routerLink="tasks">Tasks Page</a></li>
+        </ul>
+    </nav>
+    <main>
+        <router-outlet></router-outlet>
+    </main>
+</div>
+```
+
+layout.component.scss
+```
+div {
+  display: grid;
+  height: 100vh;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+      "header header header"
+      "nav content content";
+  header {
+    grid-area: header;
+    background-color: #3E51B5;
+    color: white;
+    padding: 1em;
+    box-shadow: 1px 2px 4px 0 rgb(21 99 157 / 16%);
+    border-bottom: 1px solid rgba(21,99,157,0.16);
+  }
+  nav {
+    grid-area: nav;
+    border-right: 1px solid rgba(21,99,157,0.16);
+    background-color: #fff;
+    a {
+      margin: 0;
+      padding: 0;
+      padding: 1em;
+      cursor: pointer;
+      position: relative;
+      display: block;
+      text-decoration: none;
+      color: #000;
+    }
+  }
+  main {
+    grid-area: content;
+    background-color: #f3f8fb;
+    padding: 1em;
+  }
+}
+```
+
+cms-routing.module.ts
+```
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+
+import { TasksComponent } from './pages/tasks/tasks.component';
+import { GridComponent } from './pages/grid/grid.component';
+import { LayoutComponent } from './components/layout/layout.component';
+
+const routes: Routes = [
+  {
+    path: '',
+    component: LayoutComponent,
+    children: [
+      {
+        path: '',
+        redirectTo: 'grid',
+        pathMatch: 'full'
+      },
+      {
+        path: 'grid',
+        component: GridComponent
+      },
+      {
+        path: 'tasks',
+        component: TasksComponent
+      }
+    ]
+  }
+];
+...
+```
+
+y en 
+
+app-routing.module.ts
+```
+  },
+  {
+    path: 'admin',
+    loadChildren: ()=> import ('./cms/cms.module').then( m => m.CmsModule)
+  },
+  {
+    path: '**',
+    component: NotFoundComponent
+  }
+```
+
+regresa al http://localhost:4200/admin
+
+esto nos redireccionará al /admin/grid
+
+Ya tenemos dos estructuras bien diferenciadas:
+
+![estructura de website](screenshots/screenshot_09-vistas-anidadas.png)
+
+![estructura de cms](screenshots/Screenshot_12-cms-structure.png)
 
 
 
 
+
+
+
+## SOME STUFF PROBLEMS IN ANGULAR WITH EXTERNAL DEPENDENCIES
+
+angular warning: files.service.ts depends on 'file-saver'. CommonJS or AMD dependencies can cause optimization bailouts.
+
+SOLUTION:
+
+angular.json
+```
+"projects": {
+            ...
+            "architect": {
+                "build": {
+                    "builder": "@angular-devkit/build-angular:browser",
+                    "options": {
+                        "outputPath": "dist",
+                        "index": "src/index.html",
+                        "main": "src/main.ts",
+                        "polyfills": [
+                            "zone.js"
+                        ],
+                        "tsConfig": "tsconfig.app.json",
+                        "inlineStyleLanguage": "scss",
+                        "assets": [
+                            "src/favicon.ico",
+                            "src/assets"
+                        ],
+                        "styles": [
+                            "src/styles.scss"
+                        ],
+                        "scripts": [],
+// ADDED 
+                        "allowedCommonJsDependencies": ["file-saver"]
+// ADDED 
+
+```
+
+listo wei, solucionado
 
 
 
