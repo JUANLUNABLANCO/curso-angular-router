@@ -1695,7 +1695,7 @@ Con esto podremos crear otros módulos con diferentes layouts, es decir, si nece
 
 Y esto lo hemos conseguido gracias a las vistas anidadas, veámos ahora como crear diferentes módulos.
 
-## Creando el CMS Content Management Systeme Module (admin) [vídeo13](https://platzi.com/clases/2487-angular-modular/41195-creando-el-cms-module/)
+## Creando el CMS Content Management Systeme Module (admin) [vídeo13]
 
 Ahora tenemos el módulo website independiente de la app y crearemos un nuevo módulo de administración CMSModule
 para poder insertar productos, editarlos, etc, este módulo no necesita al <app-nav></app-nav> y como vimos gracias a las vistas anidadas, hemos separado el website de nuestra app genérica y tendremos que separar el CMS creando un módulo independiente que compartirá algunas cosas de la app y otras serán exclusivas de este médulo...
@@ -1832,6 +1832,14 @@ Ya tenemos dos estructuras bien diferenciadas:
 ![estructura de website](screenshots/screenshot_09-vistas-anidadas.png)
 
 ![estructura de cms](screenshots/Screenshot_12-cms-structure.png)
+
+
+## Creando en Website Module [vídeo-14]
+
+> ng g m website --routing
+
+Ahora haremos lo mismo que hicimos com el modulo cms pero para website, así cerramos el circulo de la modularidad con nuestra app, hasta el momento.
+
 
 
 
