@@ -658,7 +658,7 @@ export class ProductsComponent {
   }
 }
 ```
- products.component.html 
+ products.component.html
 ```
 import { Component, Input } from '@angular/core';
 
@@ -845,7 +845,7 @@ Esto es una comunicación hacia adentro del padre al hijo
 
 // REVISA angulardevtools en el navegador verás la estructura de la página
 
-![snappshoot angular dev tools](/snapshoots/Screenshot_1.png)
+![angular dev tools](screenshots/screenshot_01-devtools.png)
 
 
 ## Página de categorías (comunicación hijo-padre | @Output) [vídeo-4]
@@ -1014,9 +1014,9 @@ dentro de category.component
 solo tenemos que crear una paginación similar o comunicar mediante input y output
 
 
-## Evitar doble subscribe (callback hell) switchMap()
+## Evitar doble subscribe (callback hell) switchMap() [vídeo-5]
 
-![callbackHell](snapshoots/screenshot_2-callbackhell.png)
+![callbackHell](screenshots/screenshot_02-callbackhell.png)
 
 category.components.ts
 ```
@@ -1071,11 +1071,646 @@ products.component.html
 })
 ```
 
+## RoutenrLink y RouterActive [vídeo-6]
+
+La categorías aparecen arriba en la navegación y en el menú lateral, cuando es móvil, ahí es donde deben aparecer los links a las diferentes categorías, no que el usuario vaya a la url a escribirlas 
+
+http:/localhost:4200/category/2
+
+precisamente en el nav es donde aparecen dichos enlaces, veámos pues lo que deberíamos hacer:
+
+nav.component.html
+```
+<div class="side-menu" [class.active]="activeMenu">
+        <button (click)="toggleMenu()">Close</button>
+        <ul>
+            <li><a href="">All</a></li>
+            <li><a href="">Clothes</a></li>
+            <li><a href="">Electronics</a></li>
+        </ul>
+    </div>
+```
+
+como vemos no apuntan  a nada, cambiemos eso
+
+nav.component.html
+```
+<div class="side-menu" [class.active]="activeMenu">
+        <button (click)="toggleMenu()">Close</button>
+        <ul>
+            <li><a href="">All</a></li>
+            <li><a href="">Clothes</a></li>
+            <li><a href="">Electronics</a></li>
+        </ul>
+    </div>
+```
+
+en el servicio 'categories.service.ts', debemos hacer una petición a la API, que nos devuelva las categorías
+devolverá un array con las mismas, esto nos podría servir para generar dinámicamente el nav de categorías
+
+Y si en cualquier momento la API, cambia sus ids o añaden una nueva o lo que sea estará sincronizado con nuestra app.
+
+> ng g s services/categories
+
+categories.service.ts
+```
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+
+import { Category } from '../models/product.model';  // remember está en products
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CategoriesService {
+
+  private apiURL = "https://young-sands-07814.herokuapp.com/api";
+
+  constructor(
+    private http: HttpClient
+  ) { }
+
+  getAll(limit?: number, offset?: number) {
+    let params = new HttpParams();
+    if(limit && offset) {
+      params = params.set('limit', limit);
+      params = params.set('offset', offset);
+    }
+    return this.http.get<Category[]>(`${this.apiURL}/categories`, {params});
+  }
+}
+```
+
+Ahora importamos el servicio en nav.component.ts
+
+nav.component.ts
+```
+  import { CategoriesService } from 'src/app/services/categories.service';
+  import { Category } from 'src/app/models/product.model';
+
+  export class NavComponent implements OnInit {
+  // ...
+  categories: Category[] = [];
+
+  ngOnInit(): void {
+    // ...
+    // categorias
+    this.getAllCategories();
+  }
+
+  getAllCategories() {
+    this.categoriesService.getAll().subscribe(data=>{
+      this.categories = data;
+    });
+  }
+```
+
+y añadiendo el routerLinkActive para que tome la clase .active de css, nos quedará así
+
+nav.component.html
+```
+<ul>
+    <li><a routerLinkActive="active" routerLink="home">All</a></li>
+    <li *ngFor="let item of categories">
+        <a class="active" [routerLink]="['/category', item.id]">{{ item.name }}</a>
+    </li>
+</ul>
+```
+
+## ruta 404 [vídeo-7]
+
+Al final del routind
+
+app-routing.module.ts
+```
+  ...
+  {
+    path: '**',
+    component: NotFoundComponent
+  }
+];
+```
+
+notfound.component.ts
+```
+@Component({
+  selector: 'app-not-found',
+  template: '<div><img src="https://media.giphy.com/media/A9EcBzd6t8dzE/giphy.gif"></div>',
+  styleUrls: ['./not-found.component.scss']
+})
+```
+
+notfound.component.scss
+```
+div {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+```
+
+
+## Detalle de cada producto [vídeo-8]
+
+
+> ng g c pages/product-detail
+
+app-routing.module.ts
+```
+  {
+    path: 'product/:id',
+    component: ProductDetailComponent
+  },
+```
+
+product-detail.component.ts
+```
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { switchMap } from 'rxjs/operators';
+
+import { Product } from 'src/app/models/product.model';
+
+import { ProductsService } from 'src/app/services/products.service';
+
+@Component({
+  selector: 'app-product-detail',
+  templateUrl: './product-detail.component.html',
+  styleUrls: ['./product-detail.component.scss']
+})
+export class ProductDetailComponent implements OnInit {
+
+  productId: string | null = null;
+  product: Product | null = null;
+  constructor (
+    private route: ActivatedRoute,
+    private productsService: ProductsService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.route.paramMap
+    .pipe(
+      switchMap((params) => {
+        this.productId = params.get('id');
+        if (this.productId) {
+          return this.productsService.getProduct(
+            this.productId
+          );
+        }
+        return [null];
+      })
+    )
+    .subscribe((data)=>{
+      this.product = data;
+    })
+  }
+  goToBack() {
+    this.router.navigate(['home']); // también podríamos usar location.back() pero te puede llevar a un sitio no deseado, por ejemplo fuera de la app
+  }
+}
+```
+
+product-detail.component.html
+```
+<div class="page-product">
+    <button (click)="goToBack()">Back</button>
+    <div class="detail" *ngIf="product">
+        <div class="gallery">
+            <swiper [slidesPerView]='1'>
+                <ng-template swiperSlide *ngFor="let img of product?.images">
+                    <img [src]="img" alt="img">
+                </ng-template>
+            </swiper>
+        </div>
+        <div>
+            <h1>{{ product?.title }}</h1>
+            <h2>{{ product?.price | currency }}</h2>
+            <p>{{ product?.description }}</p>
+        </div>
+    </div>
+</div>
+```
+
+product.component.html
+```
+<a [routerLink]="['/product', product.id]">
+  <app-img *ngIf="product.images.length > 0" [img]="product.images[0]"></app-img>
+</a>
+ <!-- ... -->
+```
+
+## Parametros url [vídeo-9]
+
+Queremos conseguir que cuando el detalle lateral se abra, sea totalmente sharedable 'compartible para ello debemos transformar la url del home para que diga algo así
+
+.../home?product=1
+
+estos son parámetros de Url del propio navegador y podemos aprovecharlos para nuetsro propósito.
+
+home.component.html
+```
+<app-products
+  [productId]="productId"
+  [products]="products"
+  [page]="page"
+  (pageUp)="onPageUp()"
+  (pageDown)="onPageDown()">
+</app-products>
+```
+
+home.component.ts
+```
+// detail url params
+  productId: string | null = null;
+
+  ...
+  ngOnInit(): void {
+    this.productsService.getProductsByPage(this.limit, this.offset)
+    .subscribe(data => {
+      this.products = data;
+    });
+    // vigilar los parámetros url
+    this.route.queryParamMap.subscribe(params => {
+      this.productId = params.get('product');
+      console.log(this.productId);
+    });
+  }
+```
+
+products.component.ts
+```
+  @Input() set productId(id: string | null) { // set estará vigilante a los cambios de ese productId
+    if(id) {
+      this.onShowDetailProduct(id);
+    }
+  }
+```
+
+product.component.html
+```
+<!-- <button (click)="onShowDetail()">Preview</button> -->  
+<button routerLink="." [queryParams]="{product: product.id}">Preview</button>
+```
+hemos transformado el click por un enlace, ya que ya no será un evento @Output el que lo muestre sino, desde la url
+por sus parametros, y la url es routerLink=".", que significa allá donde estemos, puede ser el '/home' o puede ser el '/category', recuerda que en ambos usamos <app-products></app-products>
+
+Para ello debes añadir la lectura de queryParams en la página category, igual que en esta para que muestre el renderizado del detalle
+
+// RESUMIENDO 
+
+Es decir desde 'home' o 'category' le estamos comunicando a products el id de un producto para ver su detalle, a través del @input, (comunicación hacia abajo) y es el propio componente nieto 'product', el que al pinchar en su botón preview y a través del @Output() (comunicación hacia arriba), que emite el evento que recoje el abuelo 'home' o 'category', para obtener un productId, y al cambiar se ve reflejado en la lógica del componente gracias al @Input() set productId() que está vigilando los cambios...
+
+El único problema que veo es un tema de UX/UI, cuando cerramos la ventana detalle de un producto, al querer abrir la misma ventana que antes, al no haber cambios en el 'productId', no realiza la acción.
+
+Mi solución es esta, ya se que no es la definitiva ni la más eficiente
+
+```
+<button routerLink="." [queryParams]="{product: product.id}" (click)="onShowDetail()">Preview</button>
+<button (click)="onAddToCart()">Add cart</button>
+```
+
+## LazyLoading y CodeSplitting [vídeo-10]
+
+Repasemos los http request
+
+![http requests](screenshots/screenshot_03-http.png)
+
+Cada vez que nuewstra aplicación necesita renderizar algo, lee el html de arriba abajo y en cada link, url o imagen o css accede a esa parte con un request del elemento necesitado lo interpreta, esta acción no se demora mucho cuando estamos desarrollando, debido a que estamos en un entorno local, el servidor es local, ng serve.
+
+request css, request images, request js, ... en js ocurre algo muy importante:
+
+  1. descarga el js (esto es lo que más tarda)
+  2. lo parsea
+  3. lo compila
+  4. lo ejecuta
+
+el nº 1 depende de dos cosas, el peso del archivo y el internet que tenga el ususario final
+
+Con lazy loading y code splitting, conseguiremos que estos tiempos sean menores o más eficientes, por ejemplo descargando partes de nuestra aplicación solo cuando sean necesarias y no desde el principio.
+
+![webpack work](screenshots/screenshot_04-webpack.png)
+
+webpack o el empaquetador que hayamos elegido, se encarga de diferentes cosas cuando se genera la aplicación en desarrollo o producción, en angular viene configurado por defecto, no tenemos que hacer nada extra para que haga algunas tareas básicas como pasar el ts a js, pasar el scss css, minimizar código, comprimir imágenes y agregarles un hash, etc. Y todo eso lo manda a archivos planos entendibles por el navegador y por los diferentes browsers debido al polyfills. 
+
+Todos los .ts de typescript van a parar al main.js, code splitting lo que significa es no poner todo en un solo archivo, en este caso el main.js, webpack puede hacer una partición de dichos archivos en diferentes chunk.js
+
+![code splitting](screenshots/screenshot_05-codesplitting.png)
+
+Esta habilidad de webpack, para el caso de angular es conseguida a través de la programación modular, cada módulo para angular significará un chunk.js diferente para webpack. Por ejemplo:
+
+  /home y /category podrían perfectamente ser dos módulos independientes, al igual que si nuestra aplicación fuese más grande y tuviera el módulo de vventas, pagos, clientes, etc. veámoslo:
+
+## Programación Modular [víde-11]
+
+![ng module](screenshots/screenshot_06-ngmodule.png)
+
+Dentro de un módulo necesitamos a veces importar otros módulos, por ello el los imports del decorador 
+app-module.ts
+```
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+
+import { SwiperModule } from 'swiper/angular';
+
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { ImgComponent } from './components/img/img.component';
+import { ProductComponent } from './components/product/product.component';
+import { ProductsComponent } from './components/products/products.component';
+import { NavComponent } from './components/nav/nav.component';
+import { ReversePipe } from './pipes/reverse.pipe';
+import { TimeAgoPipe } from './pipes/time-ago.pipe';
+import { HighlightDirective } from './directives/highlight.directive';
+
+import { TimeHttpInterceptor } from './interceptors/time-http.interceptor';
+import { AddTokenInterceptor } from './interceptors/add-token.interceptor';
+
+// pages componets routing
+import { HomeComponent } from './pages/home/home.component';
+import { NotFoundComponent } from './pages/not-found/not-found.component';
+import { CategoryComponent } from './pages/category/category.component';
+import { MyCartComponent } from './pages/mycart/mycart.component';
+import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { RecoveryComponent } from './pages/recovery/recovery.component';
+import { ProfileComponent } from './pages/profile/profile.component';
+import { ProductDetailComponent } from './pages/product-detail/product-detail.component';
 
 
 
+@NgModule({
+  declarations: [
+    AppComponent,
+    ImgComponent,
+    ProductComponent,
+    ProductsComponent,
+    NavComponent,
+    ReversePipe,
+    TimeAgoPipe,
+    HighlightDirective,
+    HomeComponent,
+    NotFoundComponent,
+    CategoryComponent,
+    MyCartComponent,
+    LoginComponent,
+    RegisterComponent,
+    RecoveryComponent,
+    ProfileComponent,
+    ProductDetailComponent
+  ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    HttpClientModule,
+    FormsModule,
+    SwiperModule
+  ],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TimeHttpInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AddTokenInterceptor,
+      multi: true
+    }
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+```
+
+Las declarations, serían los componentes, pipes and directives utilizados dentro de un módulo
+Los providers, vendrían a ser los servicios e interceptors, en nuestro caso no hemos inyectado ningún servicio, porque por defecto cuando se crean mediante el cli de angular vienen inyectados para toda la app desde el propio decorador de provider. 
+
+```
+@Injectable({
+  providedIn: 'root'
+})
+```
+
+Los exports, son las exportaciones de componentes de este módulo, en este caso AppComponent, es la forma en como se expone al exterior todo el módulo de app y por último y solo en el caso del módulo inicial AppModule, tenemos el bootstrap, que le indica a angular cual es el componente raíz dentro de este módulo, para poder exportarlo a otras partes de la aplicación, en nuestro caso el AppComponent, que será el módulo raíz de toda la app y por tanto no importado por nadie solo por el main.js.
+
+![ng module parts](screenshots/screenshot_07-ngmodule-parts.png)
+
+Como vemos en la imagen, un módulo puede tener todas esas partes, excepto los models que son interfaces reutilizadas por todos.
+
+![piezas clave de angular](screenshots/screenshot_08-key-parts.png)
+
+Como vemos en la imagen, nosotros ahora conocemos ekl funcionamiento de angular y esto nos da una ventaja a la hora de desarrollar en este framework, para poder crear componentes, servicios, módulos, etc.
+
+Nosotros ya hemos usado diferentes tipos de módulos:
+
+  1. Root Module
+  2. Core Module
+  3. Routing Module
+  4. Feature/DomainModule
+  5. SharedModule
+
+El Root Module, es la app en sí.
+
+Los CoreModule: son compartidos por los servicios.
+
+El Routing Module, permite compartir el enrutamiento entre las diferentes partes de la app, como si fueran páginas diferentes, pero en realidad es una sola, porque estamos en SPA.
+
+Los feature/Domain Module son módulos de negocio: ventas, clientes, pagos, estos son exclusivos del negocio que estamos implementando
+
+Los sharedModule: para compartir por los componentes
 
 
+## Vistas anidadas [vídeo12]
+
+![vistas anidadas](screenshots/screenshot_09-vistas-anidadas.png)
+
+Esto es lo que tenemos ahora en nuestro app-component
+
+Vamos a empezar a subdividir y trocear la app, para que podamos empezar a hacer code splitting (programación modular)
+
+creamos una carpeta llamada website y ahí ingresaremos todo lo que tenga que ver con nuestro sitio web y no sea un módulo o servicio genérico, como por ejemplo los servicios, los modelos, los interceptors
+
+Meteremos por tanto, los siguientes:
+
+1. components
+2. directives
+3. pages
+4. pipes
+
+Después de mover estos archivos haremos un ng serve para ver, que se ha roto y arreglarlo
+
+> ng serve
+
+Una vez corregidas las rutas e importaciones para que todo funcione nuevamente
+
+> ng g c website/components/layout
+
+creamos este nuevo componente layout dentro de website/layout
+
+y ahora en 
+
+app.component.html
+```
+<app-nav></app-nav>
+<router-outlet></router-outlet>
+```
+
+modificamos para tener esto otro
+
+app.component.html
+```
+<router-outlet></router-outlet>
+```
+
+y en layout tendremos esto otro:
+
+layout.component.html
+```
+<app-nav></app-nav>
+<router-outlet></router-outlet>
+```
+
+Ahora en app-routing.module.ts haremos algún cambio, en pricipio, lo teníamos así:
+
+app-routing-module.ts
+```
+import { HomeComponent } from './website/pages/home/home.component';
+...
+
+const routes: Routes = [
+  {
+    path: '',
+    redirectTo: '/home',
+    pathMatch: 'full'
+  },
+  {
+    path: 'home',
+    component: HomeComponent
+  },
+  {
+    path: 'category/:id',
+    component: CategoryComponent
+  },
+  {
+    path: 'my-cart',
+    component: MyCartComponent,
+  },
+  {
+    path: 'login',
+    component: LoginComponent,
+  },
+  {
+    path: 'register',
+    component: RegisterComponent,
+  },
+  {
+    path: 'recovery',
+    component: RecoveryComponent,
+  },
+  {
+    path: 'profile',
+    component: ProfileComponent,
+  },
+  {
+    path: 'product/:id',
+    component: ProductDetailComponent
+  },
+  {
+    path: '**',
+    component: NotFoundComponent
+  }
+];
+```
+
+pues ahora le diremos que layout es una ruta padre que contiene rutas hijas en su interior
+
+app-routing-module.ts
+```
+import { HomeComponent } from './website/pages/home/home.component';
+import { LayoutComponent } from './website/components/layout/layout.component';
+...
+
+const routes: Routes = [
+  {
+    path: '',
+    component: LayoutComponent,
+    children: [
+      {
+        path: '',
+        redirectTo: '/home',
+        pathMatch: 'full'
+      },
+      {
+        path: 'home',
+        component: HomeComponent
+      },
+      {
+        path: 'category/:id',
+        component: CategoryComponent
+      },
+      {
+        path: 'my-cart',
+        component: MyCartComponent,
+      },
+      {
+        path: 'login',
+        component: LoginComponent,
+      },
+      {
+        path: 'register',
+        component: RegisterComponent,
+      },
+      {
+        path: 'recovery',
+        component: RecoveryComponent,
+      },
+      {
+        path: 'profile',
+        component: ProfileComponent,
+      },
+      {
+        path: 'product/:id',
+        component: ProductDetailComponent
+      }
+    ]
+  },
+  {
+    path: '**',
+    component: NotFoundComponent
+  }
+];
+```
+Si ahora vamos al angular dev tools del navegador veremos esas diferencias:
+
+![cambios layout](screenshots/Screenshot_10-layout-changes.png)
+
+Con esto podremos crear otros módulos con diferentes layouts, es decir, si necesitamos un módulo que no cargue el <app-nav></app-nav>, podremos crear ese módulo con componentes diferentes a través del routing.module
+
+Y esto lo hemos conseguido gracias a las vistas anidadas, veámos ahora como crear diferentes módulos.
+
+## Creando el CMS Content Management Systeme Module (admin) [vídeo13](https://platzi.com/clases/2487-angular-modular/41195-creando-el-cms-module/)
+
+Ahora tenemos el módulo website independiente de la app y crearemos un nuevo módulo de administración CMSModule
+para poder insertar productos, editarlos, etc, este módulo no necesita al <app-nav></app-nav> y como vimos gracias a las vistas anidadas, hemos separado el website de nuestra app genérica y tendremos que separar el CMS creando un módulo independiente que compartirá algunas cosas de la app y otras serán exclusivas de este médulo...
+
+> ng g m cms --routing
+
+> ng g c cms/pages/tasks
+
+> ng g c cms/pages/grid
+
+> bg g c cms/components/layout
+
+Ahora nuestro módulo cms es independiente del modulo app
+
+![estructura de carpetas](screenshots/Screenshot_11-older-structure.png)
 
 
 
