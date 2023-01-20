@@ -8,7 +8,8 @@ import { Category } from '../models/product.model';
 })
 export class CategoriesService {
 
-  private apiURL = "https://young-sands-07814.herokuapp.com/api";
+  // private apiURL = "https://young-sands-07814.herokuapp.com/api";
+  private apiUrl = 'https://damp-spire-59848.herokuapp.com/api';
 
   constructor(
     private http: HttpClient
@@ -20,6 +21,6 @@ export class CategoriesService {
       params = params.set('limit', limit);
       params = params.set('offset', offset);
     }
-    return this.http.get<Category[]>(`${this.apiURL}/categories`, {params});
+    return this.http.get<Category[]>(`${this.apiUrl}/categories`, {params});
   }
 }

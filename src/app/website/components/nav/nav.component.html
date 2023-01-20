@@ -38,8 +38,18 @@
             </ul>
         </nav>
         <div class="info">
-            <button *ngIf="!profile; else elseBlock" (click)="login()">Login</button>
-            <ng-template #elseBlock>{{ profile?.name }}</ng-template>
+            <div *ngIf="!profile; else elseBlock">
+                <!-- <button (click)="createUser()">Crear Usuario</button> -->
+                <button (click)="login()">Login</button>
+            </div>
+            <ng-template #elseBlock>
+                <a routerLink="/profile">{{ profile?.name }} Profile </a>
+                <button (click)="logout()">Logout</button>
+            </ng-template>
+            <div *ngIf="!profile">
+                <!-- <button (click)="createAdmin()">Crear Admin</button> -->
+                <button (click)="loginAdmin()">Login Admin</button>
+            </div>
             <div class="cart">
                 <a href="">
                     <img src="./assets/svg/icon_shopping_cart.svg" alt="logo">

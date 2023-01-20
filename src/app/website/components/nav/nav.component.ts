@@ -9,6 +9,8 @@ import { User } from 'src/app/models/user.model';
 import {AuthService} from '../../../services/auth.service';
 import {UsersService} from '../../../services/users.service';
 
+import { Router } from '@angular/router';
+
 
 @Component({
   selector: 'app-nav',
@@ -28,7 +30,8 @@ export class NavComponent implements OnInit {
     private storeService: StoreService,
     private authService: AuthService,
     private usersService: UsersService,
-    private categoriesService: CategoriesService
+    private categoriesService: CategoriesService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -38,29 +41,53 @@ export class NavComponent implements OnInit {
     });
     // categorias
     this.getAllCategories();
+    // estado user
+    this.authService.user$
+    .subscribe(data => {this.profile = data});
   }
 
   toggleMenu() {
     this.activeMenu = !this.activeMenu;
   }
 
-  createUser() {
-    this.usersService.create({
-      name: 'Joh Moon',
-      email: 'johnydeep@gmail.com',
-      password: '12345678'
-    })
-    .subscribe(respuesta => {
-      console.log(respuesta);
-    })
-  }
-
-  login() {
-    this.authService.loginAndGetProfile('johnydeep@gmail.com', '12345678')
-    .subscribe(user => {
-      console.log(user);
-      this.profile = user;
+  // createUser() {
+  //   this.usersService.create({
+  //     name: 'Joh Moon',
+  //     email: 'albondiga@gmail.com',
+  //     password: '12345678',
+  //     role: 'customer'
+  //   })
+  //   .subscribe(respuesta => {
+  //     console.log('create customer: ', respuesta);
+  //   })
+  // }
+  // createAdmin() {
+  //   this.usersService.create({
+  //     name: 'Mongolo',
+  //     email: 'admin2@mail.com',
+  //     password: 'admin123',
+  //     role: 'admin'
+  //   })
+  //   .subscribe(respuesta => {
+  //     console.log('create admin: ', respuesta);
+  //   })
+  // }
+  login() {// este siempre estará {'maria@mail.com', '12345'}
+    this.authService.loginAndGetProfile('maria@mail.com', '12345')
+    .subscribe(()=>{
+      this.router.navigate(['/profile']);
     });
+  }
+  loginAdmin() {
+    this.authService.loginAndGetProfile('admin2@mail.com', 'admin123')
+    .subscribe(()=>{
+      this.router.navigate(['/profile']);
+    });
+  }
+  logout() {
+    this.authService.logout();
+    this.profile = null;
+    this.router.navigate(['/home']);
   }
   getAllCategories() {
     this.categoriesService.getAll().subscribe(data=>{

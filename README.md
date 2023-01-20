@@ -245,12 +245,12 @@ git branch -M  main
 
 > git config --global core.autocrlf true
 
-pondrá todos los ficheros que tengan un salto de línea en \r\n, que es lo que necesita windows, en vez de 
+pondrá todos los ficheros que tengan un salto de línea en \r\n, que es lo que necesita windows, en vez de
 \n que es lo que necesita los sistemas unix
 
 con eso, en el README.md podrás leerlo como se espera
 
-tras esa configuración y para que surta efecto debes de hacer lo sigueinte
+tras esa configuración y para que surta efecto debes de hacer lo siguiente
 
 > git add --renormalize .
 
@@ -1840,12 +1840,1064 @@ Ya tenemos dos estructuras bien diferenciadas:
 
 Ahora haremos lo mismo que hicimos com el modulo cms pero para website, así cerramos el circulo de la modularidad con nuestra app, hasta el momento.
 
+Luego hay que tener paciencia y llevar todo a website module, mira como quedaron los siguientes ficheros involucrados:
+
+app.module.ts
+app-routing.module.ts
+
+website.module.ts
+website-routing.module.ts
+
+cms.module.ts
+cms-routing.module.ts
+
+y  además hemos dejado fuera de estos módulos a not-found
+
+en el 
+
+app.module.ts
+```
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+
+import { NotFoundComponent } from './not-found/not-found.component';
+
+const routes: Routes = [
+  {
+    path: '',
+    loadChildren: ()=> import ('./website/website.module').then( m => m.WebsiteModule)
+  },
+  {
+    path: 'admin',
+    loadChildren: ()=> import ('./cms/cms.module').then( m => m.CmsModule)
+  },
+  {
+    path: '**',
+    component: NotFoundComponent
+  }
+];
+```
+
+queda simplificado y se importan los módulos a través del import(), es decir al vuelo, esto es llamado lazyLoading (carga suave), también estamos utilizando la técnica del code splitting (troceado del código) gracias a la modularidad
+
+app.module.ts
+```
+...
+
+import { AppRoutingModule } from './app-routing.module';
+
+import { AppComponent } from './app.component';
+
+import { NotFoundComponent } from './not-found/not-found.component';
+
+
+import { TimeHttpInterceptor } from './interceptors/time-http.interceptor';
+import { AddTokenInterceptor } from './interceptors/add-token.interceptor';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    NotFoundComponent
+    ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    HttpClientModule,
+    FormsModule
+  ],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TimeHttpInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AddTokenInterceptor,
+      multi: true
+    }
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+## Shared Module [vídeo-15]
+
+> ng g m shared
+
+Dentro de shared crearemos tres carpetas:
+
+shred
+  |____ components
+  |____ pipes
+  |____ directives
+
+En components meteremos aquellos componentes que puedan ser compartidos por otros módulos como:
+img, products, product
+En pipes reverse y time-ago
+y En directives highlight
+
+shred
+  |____ components
+          |____ img
+          |____ products
+          |____ product
+  |____ pipes
+          |____ reverse.pipe
+          |____ time-ago.pipe
+  |____ directives
+          |____ highlight.directive
+
+Es importante observar que los componentes que antes estaban en website han ido a aparar a shared y hay que hacer los cambios oportunos, admás siendo un módulo que se va a compartir, debemos exportar los componentes que lo harán
+
+sharede.module.ts
+```
+  import { NgModule } from '@angular/core';
+  import { CommonModule } from '@angular/common';
+
+  import { ImgComponent } from './components/img/img.component';
+  import { ProductComponent } from './components/product/product.component';
+  import { ProductsComponent } from './components/products/products.component';
+
+  import { ReversePipe } from './pipes/reverse.pipe';
+  import { TimeAgoPipe } from './pipes/time-ago.pipe';
+  import { HighlightDirective } from './directives/highlight.directive';
+
+  @NgModule({
+  declarations: [
+    ImgComponent,
+    ProductComponent,
+    ProductsComponent,
+    ReversePipe,
+    TimeAgoPipe,
+    HighlightDirective
+  ],
+  imports: [
+    CommonModule
+  ],
+  exports:[
+    ImgComponent,
+    ProductComponent,
+    ProductsComponent,
+    ReversePipe,
+    TimeAgoPipe,
+    HighlightDirective
+  ]
+```
+
+En el website.module solo quedaría importar el módulo shared
+
+website.module.ts
+```
+  ...
+  import { SharedModule } from '../shared/shared.module';
+  ...
+  imports: [
+    ...
+    SharedModule,
+    ...
+  ]
+```
+
+Otra cosa es que en products.component.html usamos las directivas de routerLink y esas solo se pueden usar en módulos que tengan habilitado el routerModule, así que aunque shared no utiliza routing, si necesita del modulo RouterModule, para poder funcionar.
+Y una ultima cosa es que el swipperModule es usado en ambos componentes website para productDetail y en shared para prodcuts, por tanto habrá que importarlo también en el shared
+
+shared.module.ts
+```
+  ...
+  import { RouterModule } from '@angular/router';
+  import { SharedModule } from '../shared/shared.module';
+  import { SwiperModule } from 'swiper/angular';
+  ...
+  imports: [
+    ...
+    RouterModule
+    SharedModule,
+    SwipperModule
+    ...
+  ]
+```
+
+Con esto ya estaría todo.
+
+## Precarga de módulos [vídeo-16]
+
+![js engine](screenshots/Screenshot_13-jsengine.png)
+
+Esta es la forma en que js funciona, pero nosotros con el lazy loading, y el code splitting, conseguimos trocear mejor nuestra app y cargar lo necesario, en el momento que se necesite.
+
+Vayamos ahora a crear un submódulo de otro, por ejemplo en el módulo website tenemos el categoryComponent, podemos convertir este en un submódulo del website.
+
+(Quizás no sea este el mejor sitio para hacer submódulos, pues actegory, al ser una tienda estará contínuamente siendo solicitada por el usuario, otros que se me ocurren pueden ser el login y el register o el profile)
+
+> ng g m website/pages/category --routing
+
+website.module.ts
+```
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { WebsiteRoutingModule } from './website-routing.module';
+import { NavComponent } from './components/nav/nav.component';
+import { SharedModule } from '../shared/shared.module';
+import { SwiperModule } from 'swiper/angular';
+
+// website pages
+import { HomeComponent } from './pages/home/home.component';
+import { MyCartComponent } from './pages/mycart/mycart.component';
+import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { RecoveryComponent } from './pages/recovery/recovery.component';
+import { ProfileComponent } from './pages/profile/profile.component';
+import { ProductDetailComponent } from './pages/product-detail/product-detail.component';
+import { LayoutComponent } from './components/layout/layout.component';
+
+
+@NgModule({
+  declarations: [
+    NavComponent,
+    HomeComponent,
+    MyCartComponent,
+    LoginComponent,
+    RegisterComponent,
+    RecoveryComponent,
+    ProfileComponent,
+    ProductDetailComponent,
+    LayoutComponent
+  ],
+  imports: [
+    CommonModule,
+    WebsiteRoutingModule,
+    SharedModule,
+    SwiperModule,
+  ]
+})
+export class WebsiteModule { }
+```
+
+hemos sacado el CategoryComponent de este archivo
+
+```
+  {
+    path: 'category',
+    loadChildren: () => import('./pages/category/category.module').then(m => m.CategoryModule)
+  },
+```
+
+Hemos colocado una llamada lazy loading al módulo de category
+
+```
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { CategoryRoutingModule } from './category-routing.module';
+import { CategoryComponent } from './category.component';
+
+import { SharedModule } from 'src/app/shared/shared.module';
+
+@NgModule({
+  declarations: [
+    CategoryComponent,
+  ],
+  imports: [
+    CommonModule,
+    CategoryRoutingModule,
+    SharedModule
+  ]
+})
+export class CategoryModule { }
+```
+
+Hemos traido al category component aquí y al shared Module que es usado por el products, que hace parte de este actegory
+
+category-routing.module.ts
+```
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { CategoryComponent } from './category.component';
+
+
+const routes: Routes = [
+  {
+    path: ':id',
+    component: CategoryComponent
+  }
+];
+
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class CategoryRoutingModule { }
+```
+
+y hemos creado este path sencillo de category
+
+Además ahora podemos precargar ese chunk creado, sin la demanda del usuario, es decir cargarlo después de cargar todo lo demás sin que el usuario lo solicite, para que cuando se haga, ya está ahí.
+
+## PreloadAllModules & Custom Strategy [vídeo-17]
+
+La precarga es un módulo del router que provee angular para precarga de módulos en tiempos de inactividad del browser después del renderizado inicial.
+
+app-routing.module.ts
+```
+...
+import { RouterModule, Routes, PreloadAllModules } from '@angular/router';
+
+...
+
+const routes: Routes = [
+  {
+    path: '',
+    loadChildren: ()=> import ('./website/website.module').then( m => m.WebsiteModule)
+  },
+  ...
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes, {
+    preloadingStrategy: PreloadAllModules  // depués del routes se añade esto
+  })],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+```
+
+Esto está bien, cuando hay pocos módulos para cargar, pero cuando haya muchos 50, 200, ...
+
+Crearemos nuestra propia estartegia de precarga de módulos
+
+> ng g s services/custom-preload
+
+custom-preload.service.ts
+```
+import { Injectable } from '@angular/core';
+import { PreloadingStrategy, Route } from '@angular/router';
+import { Observable,  of } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CustomPreloadService implements PreloadingStrategy {
+
+  preload(route: Route, load: () => Observable<any>): Observable<any> {
+    if(route.data && route.data['preload']) {
+      return load();
+    }
+    return of(null); //
+  }
+}
+```
+
+solo cargará aquellos módulos que tengan la bandera preload: true
+
+app-routing.module.ts
+```
+
+  { // este se precargará
+    path: '',
+    loadChildren: ()=> import ('./website/website.module').then( m => m.WebsiteModule),
+    data: { preload: true}
+  },
+  { // este no se precargará
+    path: 'admin',
+    loadChildren: ()=> import ('./cms/cms.module').then( m => m.CmsModule)
+  },
+```
+
+website-routing.module.ts
+```
+  { // este se precargará
+    path: 'category',
+    loadChildren: () => import('./pages/category/category.module').then(m => m.CategoryModule),
+    data: { preload: true}
+  },
+```
+
+Si vas al navegador y recargas la pagina verá en Network/js que carga todos los chuncks que le hemos indicado excepto el cms, que solo lo cargará cuando solicitemos /admin en la url
+
+## QuickLink Strategy [vídeo-18]
+
+Ninguna de las anteriores estratgeias de precarga tenemos en cuenta al usuario, para ello tenemos esta nueva técnica o estartegia.
+
+QuickLink Strategy se basa en la API de Intersection Observer para precargar solo los módulos pertenecientes a los links que se pueden ver en la pantalla. De esta forma la estrategia de precarga se adapta al usuario, lo cual es muy útil en casos en los que se tiene por ejemplo una interfaz que varía según el rol del usuario (administrador, vendedor, etc).
+
+Esta estrategia no forma parte del core de Angular, aunque fue desarrollada por un ingeniero del equipo de Angular y cuenta con el respaldo de la comunidad.
+
+> npm i ngx-quicklink --save --force // el --force es porque no había compatibilidad entre las versiones de angular
+
+app.module.ts
+```
+import { QuicklinkModule } from 'ngx-quicklink';
+
+imports: [
+    ...
+    QuicklinkModule
+  ]
+```
+
+app-routing.module.ts
+```
+// import { CustomPreloadService } from './services/custom-preload.service';  // esta es la estrategia anterior
+import { QuicklinkStrategy } from 'ngx-quicklink'; // esta es quick link startegy
+
+imports: [RouterModule.forRoot(routes, {
+  <!-- preloadingStrategy: CustomPreloadService --> sustituimos la estrategia
+    preloadingStrategy: QuicklinkStrategy
+  })],
+```
+
+también debemos importar el módulo aayá donde queramos que esta funcione
+
+website.module.ts
+```
+import { QuicklinkModule } from 'ngx-quicklink';
+
+imports: [
+    ...
+    QuicklinkModule
+  ]
+```
+
+Si recargas el sitio, se precarga el website solo, en movile, porque los links del menu está en el aside
+y no se ven si abres el menú se precargará.
+
+## Conoce a los guardianes (protección de rutas) [vídeo-19]
+
+Protegeremos la vista del profile, que no será accesible mientras el usaurio no haga login, también la ruta del admin a través del role:
+
+> ng g g guards/auth
+  1. CanActivate
+  2. CanActivateChild
+  3. Can Deactivate
+  4. CanLoad
+
+  Puedes seleccionar varios con la barra espaciadora
+
+  CanActivate, potege del acceso a una ruta, usaremos este
+
+
+auth.guard.ts
+```
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate {
+
+  constructor(private tokenService: TokenService) {}
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+      const token = this.tokenService.getToken();
+      return token ? true : false;
+    }
+}
+```
+
+Es preferible devolver o true o false, en este caso si existe el token, que se carga en la cabecera cuando el usuario hace login, el guard devuelve true y sino devuelve false
+
+profile.component.ts
+```
+import { Component, OnInit } from '@angular/core';
+
+import { AuthService } from 'src/app/services/auth.service';
+import { User } from 'src/app/models/user.model';
+@Component({
+  selector: 'app-profile',
+  templateUrl: './profile.component.html',
+  styleUrls: ['./profile.component.scss']
+})
+export class ProfileComponent implements OnInit {
+    user: User | null = null;
+
+    constructor ( private authService: AuthService) {}
+
+    ngOnInit(): void {
+      this.authService.getProfile()
+      .subscribe(data=>{
+        this.user = data;
+      })
+    }
+}
+```
+
+Recuerda User era una interfaz (modelo), que tenia varios campos, pero que le vamos a añadir uno más, el role, de moemnto no lo usamos pero fíjate cómo se omite en el dto, y cómo lo acotamos a dos posibilidades:
+
+profile.component.ts
+```
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: 'customer' | 'admin';
+}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface CreateUserDTO extends Omit<User, 'id' | 'role'> {}
+```
+
+profile.component.html
+```
+<div *ngIf="user">
+    <h1>My Profile</h1>
+    <p>Nombre: {{user.name}}</p>
+    <p>Email: {{user.email}}</p>
+    <p>Role: {{user.role}}</p>
+</div>
+```
+ le contamos al routing que ese path va a tener nuestro guard
+
+website-routing.component.ts
+```
+  {
+    path: 'profile',
+    canActivate: [ AuthGuard ],
+    component: ProfileComponent,
+  }
+```
+
+Recuerda el userService.getProfile() nos traía el perfil, si existía el token en el header
+
+user.service.ts
+```
+  getProfile() { // el interceptor se encarga de añadir el token
+    return this.http.get<User>(`${this.apiUrl}/api/auth/profile`, {context: addTokenHeader()});
+  }
+```
+
+El nav contenía el boton para hacer login, antes debes haber creado el usuario desde el botón create User y una vez creado te logueas, para poder enviar el token, en la cabecera.
+
+nav.component.html
+```
+  <button (click)="createUser()">Crear Usuario</button>
+  <button *ngIf="!profile; else elseBlock" (click)="login()">Login</button>
+  <ng-template #elseBlock>
+      <a routerLink="/profile">{{ profile?.name }}</a>
+  </ng-template>
+```
+
+De momento no utilizaremos los roles creados en la interfaz del user
+
+nav.component.ts
+```
+createUser() {
+    this.usersService.create({
+      name: 'Joh Moon',
+      email: 'johnydeep@gmail.com',
+      password: '12345678'
+    })
+    .subscribe(respuesta => {
+      console.log(respuesta);
+    })
+  }
+```
+
+Al ser creado el servicio devuelve la data de usuario
+
+user.service.ts
+```
+  create(dto: CreateUserDTO ) {
+    return this.http.post<User>(`${this.apiUrl}/users`, dto);
+  }
+```
+
+pero es cuando hacemos login and getProfile, cuando ocurre la magia del token enviado, desde el AuthService
+
+nav.component.ts
+```
+login() {
+    this.authService.loginAndGetProfile('johnydeep@gmail.com', '12345678')
+    .subscribe(user => {
+      console.log(user);
+      this.profile = user;
+    });
+  }
+```
+
+
+auth.service.ts
+```
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+
+import { switchMap, tap } from 'rxjs/operators';
+
+import { Auth } from '../models/auth.model';
+import { User } from '../models/user.model';
+import { TokenService } from './token.service';
+import { addTokenHeader } from '../interceptors/add-token.interceptor';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  private apiUrl = 'https://young-sands-07814.herokuapp.com';
+
+  constructor(
+    private http: HttpClient,
+    private tokenService: TokenService
+  ) { }
+  login(email: string, password: string) {
+    return this.http.post<Auth>(`${this.apiUrl}/api/auth/login`, {email, password})
+    .pipe(
+      tap(response => this.tokenService.saveToken(response.access_token))
+    );
+  }
+  getProfile() { // el interceptor se encarga de añadir el token
+    return this.http.get<User>(`${this.apiUrl}/api/auth/profile`, {context: addTokenHeader()});
+  }
+  loginAndGetProfile(email: string, password: string) {
+    return this.login(email, password)
+    .pipe(
+      switchMap(() => this.getProfile())
+    )
+  }
+}
+```
+
+El que hace la magia es addTokenHeader un interceptor de http
+
+add-token.interceptor.ts
+```
+import { Injectable } from '@angular/core';
+import {
+  HttpRequest,
+  HttpHandler,
+  HttpEvent,
+  HttpInterceptor,
+  HttpContext,
+  HttpContextToken
+} from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+import { TokenService } from '../services/token.service';
+
+const AUTH_TOKEN = new HttpContextToken<boolean>(()=> false);
+
+export function addTokenHeader() {
+  return new HttpContext().set(AUTH_TOKEN, true);
+}
+
+@Injectable()
+export class AddTokenInterceptor implements HttpInterceptor {
+
+  constructor(
+    private tokenService: TokenService
+  ) {}
+
+  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    request = this.addToken(request);
+    return next.handle(request);
+  }
+
+  // this.http.get|post|put|delete(<CUALQUIER URL>, {context: addTokenHeader()})
+  private addToken(request: HttpRequest<unknown>) {
+    if(request.context.get(AUTH_TOKEN)) {
+      const token = this.tokenService.getToken();
+      if(token) {
+        const authRequest = request.clone({
+          headers: request.headers.set('Authorization', `Bearer ${token}`)
+        });
+        return authRequest;
+      }
+    }
+    return request;
+  }
+}
+```
+
+Solo nos queda ver que hacemos con el role
+
+de momento lo he solucionado con un {{ user.role || 'customer' }} en el html
+
+
+## Implementando redirects [vídeo-20]
+
+Cambiemos un poco la lógica dentro del guard
+
+auth.guard.ts
+```
+  import { Router } from '@angular/router';
+  ...
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+      const token = this.tokenService.getToken();
+      if (!token){
+        this.router.navigate(['/home']);
+        return false;
+      }
+      return token ? true : false;
+    }
+```
+
+Ahora hagamos otra cosa, porque tenemos un sistema creado para hacer login, recibir el token y guardarlo en el localStorage, lo que haremos será otra función para borrar ese local storage, con un botón de cerrar sesión.
+
+token.service.ts
+```
+  removeToken() {
+    localStorage.removeItem('token');
+  }
+```
+
+En auth service crearemos una función para logout
+
+auth.service.ts
+```
+  logout(){
+    this.tokenService.removeToken();
+  }
+```
+
+Como ves el auth service hace uso del token service, el cual no es una petición http, en este caso es lectura, escritura en localstorage
+
+Agregemos un botón al nav, para este cometido
+
+nav.component.html
+```
+  <button (click)="createUser()">Crear Usuario</button>
+  <button *ngIf="!profile; else elseBlock" (click)="login()">Login</button>
+  <ng-template #elseBlock>
+      <a routerLink="/profile">{{ profile?.name }}</a>
+      <button (click)="logout()">Logout</button>
+  </ng-template>
+```
+
+nav.component.ts
+```
+  logout() {
+    this.authService.logout();
+    this.profile = null;
+    this.router.navigate(['/home']);
+  }
+```
+
+Ahora si recargas la página teniendo el token en local storage comienza en null el estado del profile, deberíamos ver como modificar eso, para que compruebe en el inicio si existe un token en el localstorage que mantenga el estado de la aplicación que había antes de cerrar el navegador.
+
+
+## Estado de login [vídeo-21]
+
+El estado de una aplicación, significa aquellas cosas que queremos que estén disponibles para toda la app, utilizando el BehaviourSubject<something>()
+
+Nosotros ya habíamos utilizado un BehaviourSubject<Product[]>() para el carrito de la compra, esto lo habíamos implementado en store.service.ts
+
+Hagamos algo similar para establecer el estado en cuanto al usuario logueado o no.
+
+auth.service.ts
+```
+  import { BehaviorSubject } from 'rxjs';
+  ...
+  private user = new BehaviorSubject<User | null>(null);
+  user$ = this.user.asObservable();
+  ...
+  getProfile() { // el interceptor se encarga de añadir el token
+    return this.http.get<User>(`${this.apiUrl}/api/auth/profile`, {context: addTokenHeader()}).
+    pipe(tap(user => this.user.next(user)));
+  }
+```
+
+Si vemos la diferencia entre
+```
+  addProduct(product: Product) {
+    this.myShoppingCart.push(product);
+    this.myCart.next(this.myShoppingCart);
+  }
+```
+y
+```
+  getProfile() { // el interceptor se encarga de añadir el token
+    return this.http.get<User>(`${this.apiUrl}/api/auth/profile`, {context: addTokenHeader()}).
+    pipe(tap(user => this.user.next(user)));
+  }
+```
+
+En el primero directamente hacemos el next en myCart que es un observable, en el segundo tenemos que interceptar el observable 1 'get<User>()' antes de hacer algo en el obsevable 2 'user', a través del interceptador de observables pipe(), tap() es para devolver o hacer algo sin modificar el original, porque para modificarlo sería switchMap() o map()
+
+¿Dónde podemos empezar a usar el estado del usuario?
+
+en el auth.guard, estamos pidienfo el token para saber si un usario está logged, y si pedimos el estado, en caso que exista user$, será que est´s logged y si no existe no lo estará, modifiquemos el archivo para verlo.
+
+auth.guard.ts
+```
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
+
+// import { TokenService } from '../services/token.service';
+import { AuthService } from '../services/auth.service';
+
+import { map } from 'rxjs/operators';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate {
+
+  constructor(
+    // private tokenService: TokenService,
+    private router: Router,
+    private authService: AuthService
+  ) {}
+
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+      // LOGICA antes de implementar el estado de user
+      // const token = this.tokenService.getToken();
+      // if (!token){
+      //   this.router.navigate(['/home']);
+      //   return false;
+      // }
+      // return token ? true : false;
+      return this.authService.user$
+      .pipe(
+        map( user => {
+          if (!user){
+            this.router.navigate(['/home']);
+            return false;
+          }
+          return true;
+        })
+      )
+
+    }
+}
+
+```
+
+Ahora en el archivo profile.component.ts ahorraríamos la petición de getProfile()
+
+profile.component.ts
+```
+    ngOnInit(): void {
+      this.authService.getProfile()
+      .subscribe(data=>{
+        this.user = data;
+      })
+    }
+```
+
+ese this.authService.getProfile() podemos ahorrarlo, ya hay un estado general en toda la app que identifica al usuario this.authService.user$, quedaría así
+
+profile.component.ts
+```
+  ngOnInit(): void {
+    this.authService.user$
+    .subscribe(data=>{
+      this.user = data;
+    })
+  }
+```
+
+En el fichero nav.component donde actualizabamos el profile, tambián podríamos requerir ese esatdo y no llamar al getProfile()
+
+nav.component.ts
+```
+ngOnInit(): void {
+    ...
+    // estado user
+    this.authService.user$
+    .subscribe(data => {this.profile = data});
+  }
+```
+
+al hacer login, no necesitamos llamar o recibir un user, de eso se encarga el estado general de la aplicación
+
+nav.component.ts
+```
+  login() {
+    this.authService.loginAndGetProfile('johnydeep@gmail.com', '12345678')
+    .subscribe(user => {
+      console.log(user);
+      this.profile = user;
+    });
+  }
+```
+
+sino que ahora haremos otra cosa, por ejemplo un redirect hacia el perfil del usuario
+
+nav.component.ts
+```
+  login() {
+    this.authService.loginAndGetProfile('johnydeep@gmail.com', '12345678')
+    .subscribe(()=>{
+      this.router.navigate(['/profile']);
+    });
+  }
+```
+
+Una última cosa, si observamos el fichero auth.service que es el que comunica el estado del user a los demás,
+vemos que cuando se reinicia la app, lo hace en null, y esto es una desventaja, debemos intentar averiguar si existe el token en el local storage para no reinicializar en nul ese user. Esto lo resolveremos en el app.component.ts punto de partida de toda la app.
+
+app.component.ts
+```
+import { AuthService } from './services/auth.service';
+import { TokenService } from './services/token.service';
+
+  ...
+
+  constructor(
+    ...
+    private authService: AuthService,
+    private tokenService: TokenService
+  ){}
+```
+
+Esta es la forma de controlar la session del usuario, en el estado de la app.
+
+## Guard para Admin [vídeo-22]
+
+> ng g g guards/admin
+
+admin.guard.ts
+```
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { Observable } from 'rxjs';
+
+import { map } from 'rxjs/operators';
+
+import { AuthService } from '../services/auth.service';
 
 
 
 
+@Injectable({
+  providedIn: 'root'
+})
+export class AdminGuard implements CanActivate {
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+      return this.authService.user$
+      .pipe(
+        map( user => {
+          if (user?.role === 'admin'){
+            return true;
+          } else {
+            this.router.navigate(['/home']);
+            return false;
+          }
+        })
+      )
+  }
+
+}
+```
+
+app-routing.module.ts
+```
+  ...
+
+  import { AdminGuard } from './guards/admin.guard';
 
 
+
+  const routes: Routes = [
+    ...
+    {
+      path: 'admin',
+      canActivate: [AuthGuard, AdminGuard],
+      loadChildren: ()=> import ('./cms/cms.module').then( m => m.CmsModule)
+    },
+    ...
+  ];
+  ...
+```
+
+profile.component.html
+```
+<div *ngIf="user">
+    <h1>My Profile</h1>
+    <p>Nombre: {{user.name}}</p>
+    <p>Email: {{user.email}}</p>
+    <p>Role: {{user.role || 'customer'}}</p>
+    <a *ngIf="user.role === 'admin'" routerLink="/admin">Ingresar al CMS del Admin</a>
+</div>
+```
+
+Para probar todo esto, debemos permitir el acceso a un administrador ficticio, con la siguiente data
+
+User = {
+  email: admin@mail.com,
+  password: admin1234
+}
+
+Esto es por simular el acceso de un administrador, toda esta lógica correría en gran parte por el backend,
+que autorizaría el acceso al admin de alguna manera preestablecida, nosotros en el frontend avmos a loguearnos
+con dos posibles usuarios role= 'customer' y role='admin', pero tendremos que simularlo porque en la API esa posibilidad fue eliminada de la misma, antes podías incluir role en la creación de un usuario, ahora no.
+
+
+## CanDeactivate [vídeo-23]
+
+Imaginemos un usuario que quiere salir de nuestra app, antes de realizarlo, podemos mandarle un mensaje o redirigirlo a un registro, esto se consigue con CanDeactivate
+
+> ng g g guards/exit   // tipo CanDeactivate
+
+
+website-routing.module.ts
+```
+      {
+        path: 'register',
+        canDeactivate: [ExitGuard],
+        component: RegisterComponent,
+      },
+```
+
+exit.guard.ts
+```
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanDeactivate, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { Observable } from 'rxjs';
+
+
+export interface OnExit {
+  onExit: () => Observable<boolean> | Promise<boolean> | boolean;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ExitGuard implements CanDeactivate<unknown> {
+  canDeactivate(
+    component: OnExit,
+    currentRoute: ActivatedRouteSnapshot,
+    currentState: RouterStateSnapshot,
+    nextState?: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+      return component.onExit ? component.onExit(): true;
+  }
+
+}
+```
+
+el componente que haga uso de este guard  debe implementar un método de la clase llamado onExit(), sinó lo tiene, le dejaremos salir, osea true
+
+register.component.ts
+```
+import { Component } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { OnExit } from 'src/app/guards/exit.guard';
+
+@Component({
+  selector: 'app-register',
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.scss']
+})
+export class RegisterComponent implements OnExit {
+  onExit() {
+    const userResponse = confirm('¿de verdad quieres salir sin registrarte?');
+    return userResponse;
+  }
+}
+```
 
 ## SOME STUFF PROBLEMS IN ANGULAR WITH EXTERNAL DEPENDENCIES
 
@@ -1888,6 +2940,9 @@ listo wei, solucionado
 
 
 ## NETLIFY
+
+    con esto obtenemos integración contínua CI, con netlify, cada vez que subamos algo a la rama indicada, netlify
+    cogerá y automatizará el proceso para hacer la descarga del código desde esa rama, build, and run.
 
     > npm i -g netlify-cli
 

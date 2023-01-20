@@ -1,14 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 import { UsersService } from './services/users.service';
 import { FilesService } from './services/files.service';
+
+import { AuthService } from './services/auth.service';
+import { TokenService } from './services/token.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   imgParent = '';
   showImg = true;
   // token='';
@@ -16,8 +19,23 @@ export class AppComponent {
 
   constructor(
     private usersService: UsersService,
-    private filesService: FilesService
+    private filesService: FilesService,
+    private authService: AuthService,
+    private tokenService: TokenService
   ){}
+
+  ngOnInit(): void {
+    const token = this.tokenService.getToken();
+    if(token) {
+      this.authService.getProfile()
+      .subscribe(()=>{
+        console.log('AppComponent ngOnInit: ', token);
+        console.log('Existe token en localStorage');
+      });
+    }else {
+      console.log('NO existe token en localStorage');
+    }
+  }
 
   onLoaded(img: string) {
     console.log('log padre', img);
@@ -25,16 +43,6 @@ export class AppComponent {
 
   toggleImg() {
     this.showImg = !this.showImg;
-  }
-  createUser() {
-    this.usersService.create({
-      name: 'Jonhy Deep',
-      email: 'johnydeep@gmail.com',
-      password: '12345678'
-    })
-    .subscribe(rta => {
-      console.log(rta);
-    });
   }
 
   downloadPDF() {
